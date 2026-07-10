@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOLVO — UI Vibe Sample</title>
+<style>
+:root{
+  --bg:#FAFAF8; --surface:#FFFFFF; --ink:#111111; --ink-soft:#5A5A57;
+  --line:#E7E5E1; --pill:#F0EFEB; --invert-bg:#111111; --invert-fg:#FFFFFF;
+  --red:#C96A5C; --blue:#5A82B4; --yellow:#C9A455; --green:#4E9873;
+  --red-bg:#F6EBE8; --blue-bg:#EAF0F6; --yellow-bg:#F7F1E3; --green-bg:#E9F3ED;
+  --heat0:#EEEDE8; --heat1:#CFE3D6; --heat2:#9CC8AA; --heat3:#5FA579; --heat4:#3B7A56;
+  --r:14px; --r-lg:20px; --r-pill:999px; --sb-w:220px; --sb-w-collapsed:72px;
+}
+body.dark{
+  --bg:#151513; --surface:#1D1D1B; --ink:#F2F1ED; --ink-soft:#9C9B96;
+  --line:#333330; --pill:#282825; --invert-bg:#F2F1ED; --invert-fg:#151513;
+  --red:#D98276; --blue:#7BA0D6; --yellow:#D6B36A; --green:#68AD8A;
+  --red-bg:#33231F; --blue-bg:#1F2A38; --yellow-bg:#332B1B; --green-bg:#1D2E25;
+  --heat0:#242422; --heat1:#20362A; --heat2:#2C5C40; --heat3:#3E8760; --heat4:#57B180;
+}
+body{transition:background .2s ease, color .2s ease;}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{overflow-x:hidden;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:'Söhne','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;}
+
+/* ===== Layout shell ===== */
+.shell{display:flex; min-height:100vh;}
+
+/* ---- Sidebar (desktop) ---- */
+.sidebar{
+  width:var(--sb-w); flex-shrink:0; background:var(--surface); border-right:1px solid var(--line);
+  padding:20px 14px; display:flex; flex-direction:column; transition:width .2s ease;
+}
+.sidebar.collapsed{width:var(--sb-w-collapsed);}
+.sb-top{display:flex; align-items:center; justify-content:space-between; padding:0 6px 22px;}
+.logo{font-weight:800; font-size:19px; letter-spacing:-0.02em; white-space:nowrap; overflow:hidden;}
+.logo::after{content:'.'; color:var(--ink-soft);}
+.sb-toggle{width:28px; height:28px; border-radius:50%; border:1px solid var(--line); background:var(--surface); cursor:pointer; flex-shrink:0; font-size:12px;}
+.sb-nav{display:flex; flex-direction:column; gap:2px;}
+.sb-item{display:flex; align-items:center; gap:12px; padding:10px; border-radius:var(--r); cursor:pointer; font-size:13px; font-weight:600; color:var(--ink-soft); white-space:nowrap; overflow:hidden; border:none; background:transparent; text-align:left; width:100%;}
+.sb-item:hover{background:var(--pill); color:var(--ink);}
+.sb-item.active{background:var(--invert-bg); color:var(--invert-fg);}
+.sb-ico{width:20px; text-align:center; flex-shrink:0; font-size:14px;}
+.sidebar.collapsed .sb-label, .sidebar.collapsed .logo{opacity:0; width:0;}
+.sb-bottom{margin-top:auto; padding-top:16px; border-top:1px solid var(--line);}
+.sb-user{display:flex; align-items:center; gap:10px; padding:8px 6px;}
+.avatar{width:32px; height:32px; border-radius:50%; background:var(--invert-bg); color:var(--invert-fg); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;}
+.sb-user-name{font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden;}
+.sb-user-sub{font-size:10px; color:var(--ink-soft); white-space:nowrap; overflow:hidden;}
+
+/* ---- Main ---- */
+.main{flex:1; min-width:0; display:flex; flex-direction:column;}
+.topbar{display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid var(--line); background:var(--surface); position:sticky; top:0; z-index:5;}
+.page-title{font-size:17px; font-weight:800; letter-spacing:-0.01em;}
+.top-actions{display:flex; align-items:center; gap:10px;}
+.search-box{display:flex; align-items:center; gap:8px; background:var(--pill); border-radius:var(--r-pill); padding:8px 14px; font-size:12px; color:var(--ink-soft); width:180px;}
+.icon-btn{width:34px; height:34px; border-radius:50%; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer; background:var(--surface); position:relative; flex-shrink:0;}
+.icon-btn .dot{position:absolute; top:6px; right:6px; width:7px; height:7px; border-radius:50%; background:var(--red);}
+
+.content{padding:20px 24px 90px; flex:1; max-width:100%;}
+.view{display:none;}
+.view.active{display:block; animation:fade .25s ease;}
+@keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+/* ===== Cards / Bento ===== */
+.bento{display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:14px;}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:20px; position:relative; overflow:hidden; min-width:0;}
+.card .eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); font-weight:700; margin-bottom:10px;}
+.span-2{grid-column:span 2;} .span-4{grid-column:span 4;}
+
+.elo-card{background:var(--invert-bg); color:var(--invert-fg);}
+.elo-card .eyebrow{color:#B8B8B4;}
+.elo-num{font-size:44px; font-weight:800; letter-spacing:-0.03em; line-height:1;}
+.tag-row{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+.tag{background:color-mix(in srgb, var(--invert-fg) 14%, transparent); color:var(--invert-fg); font-size:11px; padding:5px 12px; border-radius:var(--r-pill); font-weight:600;}
+.elo-card .eyebrow{color:color-mix(in srgb, var(--invert-fg) 55%, transparent);}
+.tag.accent-blue{background:var(--blue-bg); color:var(--blue);}
+.stat-num{font-size:26px; font-weight:800; letter-spacing:-0.02em;}
+.stat-num.accent-yellow{color:var(--yellow);}
+.stat-sub{font-size:12px; color:var(--ink-soft); margin-top:4px;}
+.stat-sub.accent-green{color:var(--green); font-weight:700;}
+.cta-card{display:flex; flex-direction:column; justify-content:space-between;}
+
+.btn-primary{background:var(--invert-bg); color:var(--invert-fg); border:none; padding:13px 20px; border-radius:var(--r); font-weight:700; font-size:13px; cursor:pointer; width:100%; margin-top:12px; transition:.15s;}
+.btn-primary:hover{opacity:.85;}
+.btn-secondary{background:var(--surface); color:var(--ink); border:1px solid var(--line); padding:9px 16px; border-radius:var(--r-pill); font-weight:600; font-size:12px; cursor:pointer; transition:.15s;}
+.btn-secondary:hover{border-color:var(--ink);}
+.btn-secondary.active{background:var(--yellow-bg); border-color:var(--yellow); color:var(--yellow);}
+
+/* ---- Accordion (weak topics) ---- */
+.acc-item{border-bottom:1px solid var(--line);}
+.acc-item:last-child{border-bottom:none;}
+.acc-head{display:flex; align-items:center; justify-content:space-between; padding:12px 0; cursor:pointer; gap:10px;}
+.acc-name{font-size:13px; font-weight:600;}
+.acc-right{display:flex; align-items:center; gap:10px; flex-shrink:0;}
+.bar-bg{width:100px; height:6px; background:var(--pill); border-radius:var(--r-pill); overflow:hidden;}
+.bar-fill{height:100%; border-radius:var(--r-pill);}
+.bar-fill.weak{background:var(--red);}
+.bar-fill.mid{background:var(--yellow);}
+.bar-fill.strong{background:var(--green);}
+.acc-chevron{transition:transform .2s; color:var(--ink-soft); font-size:11px;}
+.acc-item.open .acc-chevron{transform:rotate(180deg);}
+.acc-body{max-height:0; overflow:hidden; transition:max-height .25s ease;}
+.acc-item.open .acc-body{max-height:80px;}
+.acc-body-inner{padding:0 0 14px; font-size:12px; color:var(--ink-soft); display:flex; gap:16px; flex-wrap:wrap;}
+.acc-body-inner b{color:var(--ink);}
+
+/* ---- Section title ---- */
+.section-title{font-size:15px; font-weight:800; margin:28px 0 14px; display:flex; justify-content:space-between; align-items:center;}
+.section-title span.link{font-size:12px; font-weight:600; color:var(--ink-soft); cursor:pointer;}
+
+/* ---- Filter chips ---- */
+.chip-row{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+.chip{background:var(--pill); border:1px solid transparent; padding:8px 16px; border-radius:var(--r-pill); font-size:12px; font-weight:600; cursor:pointer; transition:.15s; color:var(--ink-soft);}
+.chip.active{background:var(--invert-bg); color:var(--invert-fg);}
+
+/* ---- Mock/catalog cards ---- */
+.grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+.mock-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:18px; cursor:pointer; transition:.15s; min-width:0;}
+.mock-card:hover{border-color:var(--ink);}
+.mock-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; gap:8px;}
+.mock-badge{font-size:11px; font-weight:700; background:var(--pill); padding:5px 10px; border-radius:var(--r-pill); white-space:nowrap;}
+.mock-badge.new{background:var(--blue-bg); color:var(--blue);}
+.mock-dur{font-size:11px; color:var(--ink-soft); font-weight:600; white-space:nowrap;}
+.mock-title{font-size:15px; font-weight:700; margin-bottom:6px; letter-spacing:-0.01em;}
+.mock-meta{font-size:12px; color:var(--ink-soft);}
+.mock-detail{max-height:0; overflow:hidden; transition:max-height .25s ease;}
+.mock-card.open .mock-detail{max-height:130px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line);}
+.mini-stat-row{display:flex; justify-content:space-between; font-size:11px; color:var(--ink-soft); margin-bottom:6px;}
+.mini-stat-row b{color:var(--ink);}
+.mini-stat-row b.accent-green{color:var(--green);}
+
+/* ---- Practice Question Panel ---- */
+.q-layout{display:flex; gap:14px;}
+.q-panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; flex:1; min-width:0;}
+.q-header{display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-bottom:1px solid var(--line); gap:10px;}
+.q-meta{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); font-weight:700;}
+.q-timer{font-size:14px; font-weight:800; background:var(--pill); padding:6px 14px; border-radius:var(--r-pill); white-space:nowrap;}
+.q-body{padding:22px 20px;}
+.q-text{font-size:17px; font-weight:500; line-height:1.5; margin-bottom:24px;}
+.q-options{display:grid; gap:10px;}
+.option{border:1px solid var(--line); border-radius:var(--r); padding:14px 16px; font-size:14px; font-weight:600; cursor:pointer; display:flex; gap:10px; align-items:center; transition:.15s;}
+.option:hover{border-color:var(--ink); background:var(--pill);}
+.option.selected{border-color:var(--ink); background:var(--pill);}
+.option.correct{border-color:var(--green); background:var(--green-bg); color:var(--green);}
+.option.wrong{border-color:var(--red); background:var(--red-bg); color:var(--red);}
+.option-letter{width:22px; height:22px; border-radius:50%; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0;}
+.option.correct .option-letter{background:var(--green); color:#fff; border-color:var(--green);}
+.option.wrong .option-letter{background:var(--red); color:#fff; border-color:var(--red);}
+.q-footer{display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-top:1px solid var(--line); background:var(--bg); gap:10px;}
+.progress-bar{flex:1; height:4px; background:var(--pill); border-radius:2px; overflow:hidden;}
+.progress-fill{width:38%; height:100%; background:var(--ink); transition:width .3s;}
+.explain{max-height:0; overflow:hidden; transition:max-height .3s ease; border-top:1px solid var(--line);}
+.explain.open{max-height:160px;}
+.explain-inner{padding:16px 20px; font-size:13px; color:var(--ink-soft); line-height:1.6;}
+.explain-inner b{color:var(--ink);}
+
+/* ---- Right side panel (question list) ---- */
+.side-panel{width:200px; flex-shrink:0; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:16px;}
+.side-panel .eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); font-weight:700; margin-bottom:12px;}
+.q-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:6px;}
+.q-dot{aspect-ratio:1; border-radius:8px; background:var(--pill); font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink-soft);}
+.q-dot.done{background:var(--green); color:#fff;}
+.q-dot.flagged{background:var(--yellow); color:#fff;}
+.q-dot.current{background:var(--invert-bg); color:var(--invert-fg);}
+.legend{display:flex; gap:10px; margin-top:14px; font-size:10px; color:var(--ink-soft); flex-wrap:wrap;}
+.legend span{display:flex; align-items:center; gap:5px;}
+.legend i{width:8px; height:8px; border-radius:2px; display:inline-block;}
+
+/* ---- Activity heatmap (GitHub/Coursera style) ---- */
+.heat-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;}
+.heat-title{font-size:13px; font-weight:700;}
+.heat-scroll{overflow-x:auto; padding-bottom:4px;}
+.heat-months{display:grid; grid-auto-flow:column; grid-auto-columns:12px; gap:3px; font-size:10px; color:var(--ink-soft); margin-bottom:4px; margin-left:26px;}
+.heat-body{display:flex; gap:6px;}
+.heat-daylabels{display:grid; grid-template-rows:repeat(7,12px); gap:3px; font-size:9px; color:var(--ink-soft); padding-top:1px;}
+.heat-daylabels span{line-height:12px;}
+.heat-grid{display:grid; grid-auto-flow:column; grid-auto-columns:12px; grid-template-rows:repeat(7,12px); gap:3px;}
+.heat-cell{width:12px; height:12px; border-radius:3px; background:var(--heat0);}
+.heat-cell[data-lvl="1"]{background:var(--heat1);}
+.heat-cell[data-lvl="2"]{background:var(--heat2);}
+.heat-cell[data-lvl="3"]{background:var(--heat3);}
+.heat-cell[data-lvl="4"]{background:var(--heat4);}
+.heat-legend{display:flex; align-items:center; gap:4px; font-size:10px; color:var(--ink-soft); margin-top:10px; justify-content:flex-end;}
+.heat-legend .heat-cell{width:10px; height:10px;}
+
+/* ---- Toggle switch ---- */
+.toggle-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0; gap:10px;}
+.toggle{width:38px; height:22px; border-radius:var(--r-pill); background:var(--pill); position:relative; cursor:pointer; transition:.2s; border:1px solid var(--line); flex-shrink:0;}
+.toggle::after{content:''; width:16px; height:16px; border-radius:50%; background:#fff; border:1px solid var(--line); position:absolute; top:2px; left:2px; transition:.2s;}
+.toggle.on{background:var(--invert-bg);}
+.toggle.on::after{left:18px; border-color:var(--ink);}
+
+/* ---- Analytics ---- */
+.analytics-grid{display:grid; grid-template-columns:1.3fr 1fr; gap:14px;}
+.chart-placeholder{height:150px; display:flex; align-items:flex-end; gap:8px; padding-top:10px;}
+.chart-bar{flex:1; border-radius:6px 6px 0 0; cursor:pointer;}
+.chart-bar.weak{background:var(--red);}
+.chart-bar.mid{background:var(--yellow);}
+.chart-bar.strong{background:var(--green);}
+.donut{width:120px; height:120px; border-radius:50%; background:conic-gradient(var(--green) 0% 68%, var(--pill) 68% 100%); display:flex; align-items:center; justify-content:center; margin:6px auto;}
+.donut-inner{width:82px; height:82px; background:var(--surface); border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+.donut-inner b{font-size:18px;} .donut-inner span{font-size:10px; color:var(--ink-soft);}
+
+/* ---- Drawer (bookmarks/filters) ---- */
+.overlay{position:fixed; inset:0; background:rgba(0,0,0,.25); opacity:0; pointer-events:none; transition:.2s; z-index:20;}
+.overlay.show{opacity:1; pointer-events:auto;}
+.drawer{position:fixed; top:0; right:0; height:100%; width:320px; max-width:88vw; background:var(--surface); box-shadow:-8px 0 24px rgba(0,0,0,.06); transform:translateX(100%); transition:.25s ease; z-index:21; display:flex; flex-direction:column;}
+.drawer.show{transform:translateX(0);}
+.drawer-head{display:flex; justify-content:space-between; align-items:center; padding:18px 20px; border-bottom:1px solid var(--line);}
+.drawer-title{font-size:15px; font-weight:800;}
+.drawer-close{width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:var(--surface); cursor:pointer;}
+.drawer-body{padding:18px 20px; overflow-y:auto; flex:1;}
+.bm-item{display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); font-size:13px; gap:8px;}
+.bm-item b{display:block; font-weight:600; margin-bottom:3px;}
+.bm-item span{font-size:11px; color:var(--ink-soft);}
+.bm-star{color:var(--yellow); flex-shrink:0;}
+
+/* ---- Modal ---- */
+.modal-wrap{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:30; opacity:0; pointer-events:none; transition:.2s; padding:20px;}
+.modal-wrap.show{opacity:1; pointer-events:auto;}
+.modal{background:var(--surface); border-radius:var(--r-lg); padding:28px; width:100%; max-width:360px; text-align:center; transform:scale(.96); transition:.2s;}
+.modal-wrap.show .modal{transform:scale(1);}
+.modal-icon{width:52px; height:52px; border-radius:50%; background:var(--blue-bg); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:22px; margin:0 auto 16px;}
+.modal h3{font-size:17px; margin-bottom:8px;}
+.modal p{font-size:13px; color:var(--ink-soft); margin-bottom:22px;}
+.modal-actions{display:flex; gap:10px;}
+.modal-actions button{flex:1;}
+
+/* ---- Bottom nav (mobile) ---- */
+.bottom-nav{display:none;}
+
+/* ================= RESPONSIVE ================= */
+@media(max-width:1000px){
+  .bento{grid-template-columns:repeat(2,1fr);}
+  .span-4{grid-column:span 2;}
+  .grid-3{grid-template-columns:repeat(2,1fr);}
+  .analytics-grid{grid-template-columns:1fr;}
+}
+
+@media(max-width:680px){
+  .shell{flex-direction:column;}
+  .sidebar{display:none;}
+  .main{width:100%;}
+  .topbar{padding:14px 16px;}
+  .search-box{display:none;}
+  .content{padding:16px 16px 96px;}
+  .bento{grid-template-columns:1fr; gap:12px;}
+  .span-2, .span-4{grid-column:span 1;}
+  .elo-num{font-size:38px;}
+  .grid-3{grid-template-columns:1fr;}
+  .q-layout{flex-direction:column-reverse;}
+  .side-panel{width:100%;}
+  .q-grid{grid-template-columns:repeat(8,1fr);}
+  .q-text{font-size:16px;}
+  .drawer{width:100%; max-width:100%;}
+
+  /* bottom tab bar replaces sidebar nav */
+  .bottom-nav{
+    display:flex; justify-content:space-around; align-items:center;
+    position:fixed; bottom:0; left:0; right:0; height:64px; background:var(--surface);
+    border-top:1px solid var(--line); z-index:15; padding-bottom:env(safe-area-inset-bottom);
+  }
+  .bn-item{display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; color:var(--ink-soft); font-size:10px; font-weight:700; cursor:pointer; flex:1; padding:8px 0;}
+  .bn-item .sb-ico{font-size:17px;}
+  .bn-item.active{color:var(--ink);}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- SIDEBAR (desktop) -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-top">
+      <div class="logo">SOLVO</div>
+      <button class="sb-toggle" onclick="document.getElementById('sidebar').classList.toggle('collapsed')">⟨</button>
+    </div>
+    <nav class="sb-nav">
+      <button class="sb-item active" data-view="dashboard"><span class="sb-ico">▦</span><span class="sb-label">Dashboard</span></button>
+      <button class="sb-item" data-view="practice"><span class="sb-ico">◎</span><span class="sb-label">Practice</span></button>
+      <button class="sb-item" data-view="mocks"><span class="sb-ico">▤</span><span class="sb-label">Mock Tests</span></button>
+      <button class="sb-item" data-view="catalog"><span class="sb-ico">▥</span><span class="sb-label">Catalog</span></button>
+      <button class="sb-item" data-view="analytics"><span class="sb-ico">◧</span><span class="sb-label">Analytics</span></button>
+      <button class="sb-item" onclick="openDrawer()"><span class="sb-ico">☆</span><span class="sb-label">Bookmarks</span></button>
+    </nav>
+    <div class="sb-bottom">
+      <div class="sb-user">
+        <div class="avatar">OG</div>
+        <div><div class="sb-user-name">Ojus G.</div><div class="sb-user-sub">CAT · Banking track</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="pageTitle">Dashboard</div>
+      <div class="top-actions">
+        <div class="search-box">⌕ Search</div>
+        <div class="icon-btn" id="themeToggle" onclick="toggleTheme()">☾</div>
+        <div class="icon-btn" onclick="openDrawer()">☆</div>
+        <div class="icon-btn">⚑<span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <section class="view active" id="view-dashboard">
+        <div class="bento">
+          <div class="card elo-card">
+            <div class="eyebrow">Current Rating</div>
+            <div class="elo-num">1850</div>
+            <div class="tag-row"><span class="tag">Top 2%</span><span class="tag accent-blue">CAT Track</span></div>
+          </div>
+          <div class="card"><div class="eyebrow">Streak</div><div class="stat-num accent-yellow">12 days 🔥</div><div class="stat-sub">Daily sprint active</div></div>
+          <div class="card"><div class="eyebrow">Rank</div><div class="stat-num">#412</div><div class="stat-sub accent-green">▲ 15 today</div></div>
+          <div class="card cta-card">
+            <div class="eyebrow">Next</div>
+            <div style="font-size:14px; font-weight:700;">SBI PO Mock 04</div>
+            <button class="btn-primary" onclick="openModal()">Start Test</button>
+          </div>
+        </div>
+
+        <div class="bento">
+          <div class="card span-2">
+            <div class="eyebrow">Weak Topics — tap to expand</div>
+            <div class="acc-item">
+              <div class="acc-head" onclick="toggleAcc(this)">
+                <span class="acc-name">Time, Speed & Distance</span>
+                <div class="acc-right"><div class="bar-bg"><div class="bar-fill weak" style="width:42%"></div></div><span class="acc-chevron">▾</span></div>
+              </div>
+              <div class="acc-body"><div class="acc-body-inner"><span><b>42%</b> accuracy</span><span><b>18</b> attempted</span><span><b>11</b> wrong</span></div></div>
+            </div>
+            <div class="acc-item">
+              <div class="acc-head" onclick="toggleAcc(this)">
+                <span class="acc-name">Data Interpretation</span>
+                <div class="acc-right"><div class="bar-bg"><div class="bar-fill mid" style="width:58%"></div></div><span class="acc-chevron">▾</span></div>
+              </div>
+              <div class="acc-body"><div class="acc-body-inner"><span><b>58%</b> accuracy</span><span><b>32</b> attempted</span><span><b>13</b> wrong</span></div></div>
+            </div>
+            <div class="acc-item">
+              <div class="acc-head" onclick="toggleAcc(this)">
+                <span class="acc-name">Reading Comprehension</span>
+                <div class="acc-right"><div class="bar-bg"><div class="bar-fill strong" style="width:71%"></div></div><span class="acc-chevron">▾</span></div>
+              </div>
+              <div class="acc-body"><div class="acc-body-inner"><span><b>71%</b> accuracy</span><span><b>26</b> attempted</span><span><b>8</b> wrong</span></div></div>
+            </div>
+          </div>
+          <div class="card span-2">
+            <div class="eyebrow">This Week</div>
+            <div class="chart-placeholder">
+              <div class="chart-bar mid" style="height:40%"></div><div class="chart-bar strong" style="height:65%"></div>
+              <div class="chart-bar weak" style="height:30%"></div><div class="chart-bar strong" style="height:80%"></div>
+              <div class="chart-bar mid" style="height:55%"></div><div class="chart-bar strong" style="height:90%"></div>
+              <div class="chart-bar weak" style="height:20%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <div class="heat-head">
+            <span class="heat-title">214 practice sessions in the last year</span>
+            <span class="stat-sub">Current streak: 12 days</span>
+          </div>
+          <div class="heat-scroll">
+            <div class="heat-months" id="heatMonths"></div>
+            <div class="heat-body">
+              <div class="heat-daylabels"><span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span></div>
+              <div class="heat-grid" id="heatGrid"></div>
+            </div>
+          </div>
+          <div class="heat-legend">Less
+            <div class="heat-cell" data-lvl="0"></div><div class="heat-cell" data-lvl="1"></div>
+            <div class="heat-cell" data-lvl="2"></div><div class="heat-cell" data-lvl="3"></div>
+            <div class="heat-cell" data-lvl="4"></div>More
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <div class="eyebrow">Preferences</div>
+          <div class="toggle-row"><span style="font-size:13px; font-weight:600;">Daily reminder</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="toggle-row"><span style="font-size:13px; font-weight:600;">Show ghost pace bar</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+          <div class="toggle-row"><span style="font-size:13px; font-weight:600;">Auto-submit at timeout</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        </div>
+      </section>
+
+      <!-- ===== PRACTICE ===== -->
+      <section class="view" id="view-practice">
+        <div class="q-layout">
+          <div class="q-panel">
+            <div class="q-header">
+              <span class="q-meta">CAT 2023 · Quant</span>
+              <span class="q-timer">00:42</span>
+            </div>
+            <div class="q-body">
+              <div class="q-text">A train running at 60 km/hr crosses a pole in 9 seconds. What is the length of the train?</div>
+              <div class="q-options" id="qOptions">
+                <div class="option" data-correct="false" onclick="selectOption(this)"><span class="option-letter">A</span> 120 m</div>
+                <div class="option" data-correct="true" onclick="selectOption(this)"><span class="option-letter">B</span> 150 m</div>
+                <div class="option" data-correct="false" onclick="selectOption(this)"><span class="option-letter">C</span> 180 m</div>
+                <div class="option" data-correct="false" onclick="selectOption(this)"><span class="option-letter">D</span> 210 m</div>
+              </div>
+            </div>
+            <div class="explain" id="explainBox">
+              <div class="explain-inner"><b>Solution:</b> Speed = 60×(5/18) = 50/3 m/s. Length = Speed × Time = (50/3)×9 = <b>150 m</b>.</div>
+            </div>
+            <div class="q-footer">
+              <button class="btn-secondary" onclick="this.classList.toggle('active'); this.textContent=this.classList.contains('active')?'★ Saved':'☆ Bookmark'">☆ Bookmark</button>
+              <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+              <button class="btn-secondary" onclick="nextQuestion()">Next →</button>
+            </div>
+          </div>
+          <div class="side-panel">
+            <div class="eyebrow">Question Map</div>
+            <div class="q-grid" id="qMap"></div>
+            <div class="legend">
+              <span><i style="background:var(--green)"></i>Done</span>
+              <span><i style="background:var(--yellow)"></i>Flagged</span>
+              <span><i style="background:var(--ink)"></i>Current</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MOCK TESTS ===== -->
+      <section class="view" id="view-mocks">
+        <div class="chip-row">
+          <div class="chip active" onclick="chipSwitch(this)">All</div>
+          <div class="chip" onclick="chipSwitch(this)">Banking</div>
+          <div class="chip" onclick="chipSwitch(this)">MBA</div>
+          <div class="chip" onclick="chipSwitch(this)">Attempted</div>
+        </div>
+        <div class="grid-3">
+          <div class="mock-card" onclick="toggleMock(this)">
+            <div class="mock-top"><span class="mock-badge new">New</span><span class="mock-dur">60 min</span></div>
+            <div class="mock-title">SBI PO Prelims Mock 04</div>
+            <div class="mock-meta">100 Qs · Not attempted</div>
+            <div class="mock-detail"><div class="mini-stat-row"><span>Sections</span><b>3</b></div><div class="mini-stat-row"><span>Negative marking</span><b>0.25</b></div><button class="btn-primary" style="margin-top:8px;">Start</button></div>
+          </div>
+          <div class="mock-card" onclick="toggleMock(this)">
+            <div class="mock-top"><span class="mock-badge">CAT</span><span class="mock-dur">120 min</span></div>
+            <div class="mock-title">Full Length Mock 11</div>
+            <div class="mock-meta">66 Qs · Score 142/198</div>
+            <div class="mock-detail"><div class="mini-stat-row"><span>Percentile</span><b class="accent-green">96.4</b></div><div class="mini-stat-row"><span>Rank</span><b>#412</b></div><button class="btn-secondary" style="margin-top:8px; width:100%;">Review</button></div>
+          </div>
+          <div class="mock-card" onclick="toggleMock(this)">
+            <div class="mock-top"><span class="mock-badge">RBI Grade B</span><span class="mock-dur">90 min</span></div>
+            <div class="mock-title">Phase 1 Mock 02</div>
+            <div class="mock-meta">200 Qs · Not attempted</div>
+            <div class="mock-detail"><div class="mini-stat-row"><span>Sections</span><b>4</b></div><div class="mini-stat-row"><span>Negative marking</span><b>0.25</b></div><button class="btn-primary" style="margin-top:8px;">Start</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== CATALOG ===== -->
+      <section class="view" id="view-catalog">
+        <div class="chip-row">
+          <div class="chip active" onclick="chipSwitch(this)">All</div>
+          <div class="chip" onclick="chipSwitch(this)">Algebra</div>
+          <div class="chip" onclick="chipSwitch(this)">Geometry</div>
+          <div class="chip" onclick="chipSwitch(this)">Shortcuts</div>
+        </div>
+        <div class="grid-3">
+          <div class="mock-card"><div class="mock-meta">YouTube · 45 min</div><div class="mock-title" style="margin-top:6px;">Triangles & Circles Masterclass</div><div class="mock-meta">Curated by Top 1%</div></div>
+          <div class="mock-card"><div class="mock-meta">YouTube · 12 min</div><div class="mock-title" style="margin-top:6px;">Time-Speed-Distance Shortcuts</div><div class="mock-meta">Curated by Top 5%</div></div>
+          <div class="mock-card"><div class="mock-meta">YouTube · 22 min</div><div class="mock-title" style="margin-top:6px;">Number Systems: HCF & LCM</div><div class="mock-meta">Curated by Top 10%</div></div>
+        </div>
+      </section>
+
+      <!-- ===== ANALYTICS ===== -->
+      <section class="view" id="view-analytics">
+        <div class="analytics-grid">
+          <div class="card">
+            <div class="eyebrow">Accuracy by Subject</div>
+            <div class="chart-placeholder">
+              <div class="chart-bar strong" style="height:70%"></div><div class="chart-bar mid" style="height:45%"></div>
+              <div class="chart-bar strong" style="height:85%"></div><div class="chart-bar mid" style="height:60%"></div>
+              <div class="chart-bar weak" style="height:38%"></div>
+            </div>
+          </div>
+          <div class="card"><div class="eyebrow">Overall Accuracy</div><div class="donut"><div class="donut-inner"><b>68%</b><span>Correct</span></div></div></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV (mobile) -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bn-item active" data-view="dashboard"><span class="sb-ico">▦</span>Home</button>
+  <button class="bn-item" data-view="practice"><span class="sb-ico">◎</span>Practice</button>
+  <button class="bn-item" data-view="mocks"><span class="sb-ico">▤</span>Mocks</button>
+  <button class="bn-item" data-view="catalog"><span class="sb-ico">▥</span>Catalog</button>
+  <button class="bn-item" data-view="analytics"><span class="sb-ico">◧</span>Stats</button>
+</nav>
+
+<!-- DRAWER -->
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head"><span class="drawer-title">Bookmarks</span><button class="drawer-close" onclick="closeDrawer()">✕</button></div>
+  <div class="drawer-body">
+    <div class="bm-item"><div><b>Time-Speed-Distance #14</b><span>CAT 2022 · Quant</span></div><span class="bm-star">★</span></div>
+    <div class="bm-item"><div><b>Syllogism #08</b><span>SBI PO · Reasoning</span></div><span class="bm-star">★</span></div>
+    <div class="bm-item"><div><b>Para Jumbles #22</b><span>CAT 2021 · Verbal</span></div><span class="bm-star">★</span></div>
+    <div class="bm-item"><div><b>Profit & Loss #05</b><span>IBPS · Quant</span></div><span class="bm-star">★</span></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-wrap" id="modalWrap">
+  <div class="modal">
+    <div class="modal-icon">⏱</div>
+    <h3>Start Mock Test?</h3>
+    <p>Timer begins immediately. Requires an active connection at start and submit.</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" style="width:100%;" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" style="margin-top:0;" onclick="closeModal()">Begin</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- Theme toggle ----
+function toggleTheme(){
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  document.getElementById('themeToggle').textContent = isDark ? '☀' : '☾';
+  try{ localStorage.setItem('solvo-theme', isDark ? 'dark' : 'light'); }catch(e){}
+}
+(function(){
+  let saved = null;
+  try{ saved = localStorage.getItem('solvo-theme'); }catch(e){}
+  if(saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)){
+    document.body.classList.add('dark');
+    document.addEventListener('DOMContentLoaded', ()=>{ document.getElementById('themeToggle').textContent='☀'; });
+  }
+})();
+
+// ---- Nav: works for both sidebar (desktop) and bottom nav (mobile) ----
+function setView(viewName, sourceEl){
+  document.querySelectorAll('[data-view]').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('[data-view="'+viewName+'"]').forEach(x=>x.classList.add('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+viewName).classList.add('active');
+  document.getElementById('pageTitle').textContent = sourceEl.textContent.trim();
+}
+document.querySelectorAll('[data-view]').forEach(item=>{
+  item.addEventListener('click', ()=> setView(item.dataset.view, item));
+});
+
+// ---- Accordion ----
+function toggleAcc(el){
+  const item = el.parentElement;
+  const wasOpen = item.classList.contains('open');
+  document.querySelectorAll('.acc-item').forEach(i=>i.classList.remove('open'));
+  if(!wasOpen) item.classList.add('open');
+}
+
+// ---- Mock card expand ----
+function toggleMock(card){
+  const wasOpen = card.classList.contains('open');
+  document.querySelectorAll('.mock-card').forEach(c=>c.classList.remove('open'));
+  if(!wasOpen) card.classList.add('open');
+}
+
+// ---- Chips ----
+function chipSwitch(chip){
+  chip.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+}
+
+// ---- Practice: options + explanation ----
+function selectOption(opt){
+  document.querySelectorAll('#qOptions .option').forEach(o=>o.classList.remove('selected','correct','wrong'));
+  opt.classList.add('selected');
+  const correct = document.querySelector('#qOptions .option[data-correct="true"]');
+  if(opt.dataset.correct === 'true'){ opt.classList.add('correct'); }
+  else { opt.classList.add('wrong'); correct.classList.add('correct'); }
+  document.getElementById('explainBox').classList.add('open');
+  document.getElementById('progFill').style.width='55%';
+}
+function nextQuestion(){
+  document.querySelectorAll('#qOptions .option').forEach(o=>o.classList.remove('selected','correct','wrong'));
+  document.getElementById('explainBox').classList.remove('open');
+  document.getElementById('progFill').style.width='38%';
+}
+
+// ---- Activity heatmap (GitHub-style) ----
+(function(){
+  const grid = document.getElementById('heatGrid');
+  const monthsRow = document.getElementById('heatMonths');
+  const monthNames = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
+  const weeks = 52;
+  let seed = 7;
+  function rand(){ seed = (seed*9301+49297)%233280; return seed/233280; }
+  for(let w=0; w<weeks; w++){
+    if(w % 4 === 0){
+      const label = document.createElement('span');
+      label.textContent = monthNames[Math.floor(w/4) % 12];
+      label.style.gridColumn = (w+1);
+      monthsRow.appendChild(label);
+    }
+    for(let d=0; d<7; d++){
+      const cell = document.createElement('div');
+      cell.className='heat-cell';
+      const r = rand();
+      let lvl = 0;
+      if(r>0.55) lvl=1; if(r>0.72) lvl=2; if(r>0.85) lvl=3; if(r>0.94) lvl=4;
+      // denser recent activity (last 6 weeks) to mirror an active streak
+      if(w>weeks-6 && rand()>0.3) lvl = Math.min(4, lvl+1);
+      cell.dataset.lvl = lvl;
+      grid.appendChild(cell);
+    }
+  }
+})();
+
+// ---- Question map ----
+const qMap = document.getElementById('qMap');
+for(let i=1;i<=15;i++){
+  const d = document.createElement('div');
+  let cls='q-dot';
+  if(i<6) cls+=' done'; else if(i===6) cls+=' current'; else if(i===9) cls+=' flagged';
+  d.className=cls; d.textContent=i;
+  d.onclick=()=>{ document.querySelectorAll('.q-dot').forEach(x=>x.classList.remove('current')); d.classList.add('current'); };
+  qMap.appendChild(d);
+}
+
+// ---- Drawer ----
+function openDrawer(){ document.getElementById('drawer').classList.add('show'); document.getElementById('overlay').classList.add('show'); }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('show'); document.getElementById('overlay').classList.remove('show'); }
+
+// ---- Modal ----
+function openModal(){ document.getElementById('modalWrap').classList.add('show'); }
+function closeModal(){ document.getElementById('modalWrap').classList.remove('show'); }
+</script>
+</body>
+</html>
